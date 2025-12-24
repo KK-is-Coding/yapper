@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Yapper – Local Chat</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+
+    input, button {
+      margin: 6px 0;
+      padding: 6px;
+    }
+
+    #rooms button {
+      display: block;
+      margin: 5px 0;
+    }
+
+    #chat {
+      border: 1px solid #ccc;
+      height: 260px;
+      padding: 10px;
+      overflow-y: auto;
+      background: #f9f9f9;
+      margin-bottom: 10px;
+    }
+
+    .msg {
+      margin-bottom: 4px;
+    }
+
+    .system {
+      color: gray;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+
+<h2>📍 Location</h2>
+
+<label>
+  Latitude:
+  <input id="lat" type="number" step="any" value="28.6139">
+</label><br>
+
+<label>
+  Longitude:
+  <input id="lon" type="number" step="any" value="77.2090">
+</label><br>
+
+<button type="button" onclick="createRoom()">Create Room</button>
+<button type="button" onclick="findRooms()">Find Nearby Rooms</button>
+
+<hr>
+
+<h2>🏠 Nearby Rooms</h2>
+<div id="rooms"></div>
+
+<hr>
+
+<h2>💬 Chat</h2>
+<div id="chat"></div>
+
+<input id="msg" type="text" placeholder="Type message and press Enter…" />
+<button type="button" onclick="sendMessage()">Send</button>
+
+<script>
+/* =========================================================
+   🚫 ABSOLUTE PROTECTION AGAINST PAGE RELOADS
+   ========================================================= */
+document.addEventListener("submit", function (e) {
+  e.preventDefault();
+  e.stopPropagation();
+  return false;
+}, true);
+
+console.log("PAGE LOADED AT:", new Date().toISOString());
+
+/* ========================================================= */
+
+const API = "http://127.0.0.1:8000";
+let ws = null;
+let currentRoom = null;
+const userId = "user_" + Math.floor(Math.random() * 100000);
+
+/* -------------------- UI HELPERS -------------------- */
+
+function logChat(text, cls = "msg") {
+  const chat = document.getElementById("chat");
+  const line = document.createElement("div");
+  line.className = cls;
+  line.innerHTML = text;
+  chat.appendChild(line);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+/* -------------------- API -------------------- */
+
+async function createRoom() {
+  const lat = document.getElementById("lat").value;
+  const lon = document.getElementById("lon").value;
+
+  const res = await fetch(
+    `${API}/rooms/create?lat=${lat}&lon=${lon}`,
+    { method: "POST" }
+  );
+
+  const room = await res.json();
+  alert("Room created:\n" + room.id);
+}
+
+async function findRooms() {
+  const lat = document.getElementById("lat").value;
+  const lon = document.getElementById("lon").value;
+
+  const res = await fetch(
+    `${API}/rooms/nearby?lat=${lat}&lon=${lon}`
+  );
+
+  const rooms = await res.json();
+  console.log("Rooms received:", rooms);
+
+  const container = document.getElementById("rooms");
+  container.innerHTML = "";
+
+  if (!rooms.length) {
+    container.innerHTML = "<i>No nearby rooms found</i>";
+    return;
+  }
+
+  rooms.forEach(room => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = "Join Room " + room.id;
+    btn.onclick = () => joinRoom(room.id);
+    container.appendChild(btn);
+  });
+}
+
+/* -------------------- WEBSOCKET -------------------- */
+
+function joinRoom(roomId) {
+  if (ws) {
+    ws.close();
+    ws = null;
+  }
+
+  currentRoom = roomId;
+
+  const chat = document.getElementById("chat");
+  chat.innerHTML = "";
+
+  logChat("Joining room " + roomId + "...", "system");
+
+  ws = new WebSocket(`ws://127.0.0.1:8000/ws/${roomId}`);
+
+  ws.onopen = () => {
+    logChat("Connected ✅", "system");
+
+    ws.send(JSON.stringify({
+      action: "join",
+      user_id: userId,
+      lat: parseFloat(document.getElementById("lat").value),
+      lon: parseFloat(document.getElementById("lon").value)
+    }));
+  };
+
+  ws.onmessage = (e) => {
+    let data;
+    try {
+      data = JSON.parse(e.data);
+    } catch {
+      logChat(e.data);
+      return;
+    }
+
+    if (data.error) {
+      logChat("❌ " + data.error, "system");
+      return;
+    }
+
+    if (data.user_id && data.content) {
+      logChat(`<b>${data.user_id}</b>: ${data.content}`);
+    }
+  };
+
+  ws.onclose = () => {
+    logChat("Disconnected", "system");
+  };
+}
+
+/* -------------------- SEND MESSAGE -------------------- */
+
+function sendMessage() {
+  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+
+  const input = document.getElementById("msg");
+  const msg = input.value.trim();
+
+  if (!msg) return;
+
+  input.value = "";
+
+  ws.send(JSON.stringify({
+    type: "text",
+    content: msg
+  }));
+}
+
+/* --------- PREVENT ENTER KEY RELOAD --------- */
+
+document.getElementById("msg").addEventListener("keydown", function (e) {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+</script>
+
+</body>
+</html>
