@@ -14,11 +14,13 @@ ALLOWED_TYPES = {
 
 MAX_FILE_SIZE_MB = 20
 
+
 def validate_file(file: UploadFile, category: str):
     if category not in ALLOWED_TYPES:
         raise HTTPException(status_code=400, detail="Invalid category")
     if file.content_type not in ALLOWED_TYPES[category]:
         raise HTTPException(status_code=400, detail="Invalid file type")
+
 
 @router.post("/upload/{category}")
 async def upload_media(category: str, file: UploadFile = File(...)):
