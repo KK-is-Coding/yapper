@@ -30,7 +30,7 @@ const ChatArea = ({ selectedRoom, messages, username, onSendMessage, onLogout })
                     <p className="text-sm text-zinc-400 flex items-center gap-1">
                         <MapPin size={12} />
                         {selectedRoom.location}
-                        <span className="ml-2 text-blue-600">• Room will be visible to users within 5km</span>
+                        <span className="ml-2 text-blue-500">• Room will be visible to users within 5km</span>
                     </p>
                 </div>
                 <button
@@ -53,27 +53,26 @@ const ChatArea = ({ selectedRoom, messages, username, onSendMessage, onLogout })
                         {messages.map(message => (
                             <div
                                 key={message.id}
-                                className={`flex ${message.sender === username ? 'justify-end' : 'justify-start'}`}
+                                className={`flex ${message.sender === username ? 'justify-end' : 'justify-start'
+                                    }`}
                             >
-                                <div className="flex flex-col max-w-md">
+                                <div className="flex flex-col items-end max-w-md">
 
-                                    {/* Meta: centered relative to bubble */}
-                                    <div className="text-xs text-zinc-400 mb-1 self-center">
+                                    <div className="text-xs text-zinc-400 mb-1 text-right w-full truncate">
                                         {message.timestamp} &nbsp; {message.sender}
                                     </div>
 
-                                    {/* Bubble */}
                                     <div
-                                        className={`px-4 py-2 rounded-lg ${message.sender === username
+                                        className={`px-4 py-2 rounded-2xl w-fit max-w-[75%] break-words ${message.sender === username
                                                 ? 'bg-orange-600'
                                                 : 'bg-zinc-800'
                                             }`}
                                     >
                                         {message.text}
                                     </div>
-
                                 </div>
                             </div>
+
 
                         ))}
                     </div>
