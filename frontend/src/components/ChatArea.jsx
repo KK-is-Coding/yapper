@@ -30,7 +30,7 @@ const ChatArea = ({ selectedRoom, messages, username, onSendMessage, onLogout })
                     <p className="text-sm text-zinc-400 flex items-center gap-1">
                         <MapPin size={12} />
                         {selectedRoom.location}
-                        <span className="ml-2 text-zinc-600">• Room will be visible to users within 5km</span>
+                        <span className="ml-2 text-blue-600">• Room will be visible to users within 5km</span>
                     </p>
                 </div>
                 <button
@@ -53,18 +53,20 @@ const ChatArea = ({ selectedRoom, messages, username, onSendMessage, onLogout })
                         {messages.map(message => (
                             <div
                                 key={message.id}
-                                className={`flex ${message.sender === username ? 'justify-end' : 'justify-start'}`}
+                                className={`flex flex-col ${message.sender === username ? 'items-end' : 'items-start'}`}
                             >
+                                <div className="text-xs text-zinc-400 mb-1">{message.sender}</div>
                                 <div
                                     className={`max-w-md px-4 py-2 rounded-lg ${message.sender === username
                                             ? 'bg-orange-600'
                                             : 'bg-zinc-800'
                                         }`}
                                 >
-                                    <div className="text-xs text-zinc-400 mb-1">{message.sender}</div>
+                                    {/* <div className="text-xs text-zinc-400 mb-1">{message.sender}</div> */}
                                     <div>{message.text}</div>
-                                    <div className="text-xs text-zinc-400 mt-1">{message.timestamp}</div>
+                                    {/* <div className="text-xs text-zinc-400 mt-1">{message.timestamp}</div> */}
                                 </div>
+                                <div className="text-xs text-zinc-400 mt-1">{message.timestamp}</div>
                             </div>
                         ))}
                     </div>
