@@ -1,8 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { MessageCircle, MapPin, Send, LogOut } from 'lucide-react';
 
 const ChatArea = ({ selectedRoom, messages, username, onSendMessage, onLogout }) => {
     const [newMessage, setNewMessage] = useState('');
+    const messagesEndRef = useRef(null);
+    const chatContainerRef = useRef(null);
+
+    // Auto-scroll to bottom when new messages arrive
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages]);
 
     const handleSend = () => {
         if (newMessage.trim()) {
@@ -22,9 +33,9 @@ const ChatArea = ({ selectedRoom, messages, username, onSendMessage, onLogout })
     }
 
     return (
-        <div className="flex-1 flex flex-col">
-            {/* Chat Header */}
-            <div className="h-16 border-b border-zinc-800 px-6 flex items-center justify-between">
+        <div className="flex-1 flex flex-col h-screen overflow-hidden">
+            {/* Chat Header - Fixed */}
+            <div className="flex-shrink-0 h-16 border-b border-zinc-800 px-6 flex items-center justify-between">
                 <div>
                     <h2 className="text-xl font-semibold">{selectedRoom.name}</h2>
                     <p className="text-sm text-zinc-400 flex items-center gap-1">
@@ -42,45 +53,51 @@ const ChatArea = ({ selectedRoom, messages, username, onSendMessage, onLogout })
                 </button>
             </div>
 
-            {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-6">
+            {/* Messages Area - Scrollable */}
+            <div
+                ref={chatContainerRef}
+                className="flex-1 overflow-y-auto p-6"
+                style={{ maxHeight: 'calc(100vh - 64px - 88px)' }}
+            >
                 {messages.length === 0 ? (
                     <div className="h-full flex items-center justify-center text-zinc-500">
                         No messages yet. Start the conversation!
                     </div>
                 ) : (
                     <div className="space-y-4">
-                        {messages.map(message => (
-                            <div
-                                key={message.id}
-                                className={`flex ${message.sender === username ? 'justify-end' : 'justify-start'
-                                    }`}
-                            >
-                                <div className="flex flex-col items-end max-w-md">
+                        {messages.map(message => {
+                            const isMe = message.sender === username
 
-                                    <div className="text-xs text-zinc-400 mb-1 text-right w-full truncate">
-                                        {message.timestamp} &nbsp; {message.sender}
-                                    </div>
+                            return (
+                                <div
+                                    key={message.id}
+                                    className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}
+                                >
+                                    <div className="flex flex-col items-end w-full">
 
-                                    <div
-                                        className={`px-4 py-2 rounded-2xl w-fit max-w-[75%] break-words ${message.sender === username
-                                                ? 'bg-orange-600'
-                                                : 'bg-zinc-800'
-                                            }`}
-                                    >
-                                        {message.text}
+                                        {/* Meta */}
+                                        <div className="text-xs text-zinc-400 mb-1 text-right max-w-[40%] truncate">
+                                            {message.timestamp} &nbsp; {message.sender}
+                                        </div>
+
+                                        {/* Bubble */}
+                                        <div
+                                            className={`px-4 py-2 rounded-2xl max-w-[40%] min-w-[120px] whitespace-pre-wrap break-words ${isMe ? 'bg-orange-600' : 'bg-zinc-800'}`}
+                                        >
+                                            {message.text}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            )
+                        })}
 
-
-                        ))}
+                        <div ref={messagesEndRef} />
                     </div>
                 )}
             </div>
 
-            {/* Message Input */}
-            <div className="p-6 border-t border-zinc-800">
+            {/* Message Input - Fixed at Bottom */}
+            <div className="flex-shrink-0 p-6 border-t border-zinc-800 bg-zinc-950">
                 <div className="flex gap-2">
                     <input
                         type="text"
