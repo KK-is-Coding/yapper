@@ -5,7 +5,6 @@ from typing import Generator
 
 from app.database import get_session
 from app.core.security import decode_access_token
-from app.models.user import User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
