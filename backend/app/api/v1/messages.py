@@ -3,9 +3,9 @@ from sqlmodel import Session
 from typing import List
 
 from app.api.deps import get_db, get_current_user
-from app.models.user import User
+from app_archive.models.user import User
 from app.schemas.message import MessageCreate, MessageResponse
-from app.services.message_service import MessageService
+from app_archive.services.message_service import MessageService
 
 router = APIRouter(prefix="/rooms/{room_id}/messages", tags=["Messages"])
 

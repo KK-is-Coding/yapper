@@ -3,9 +3,9 @@ from sqlmodel import Session
 import json
 
 from app.websocket.connection_manager import manager
-from app.database import engine
-from app.services.message_service import MessageService
-from app.services.room_service import RoomService
+from app_archive.database import engine
+from app_archive.services.message_service import MessageService
+from app_archive.services.room_service import RoomService
 from app.schemas.message import MessageCreate
 
 

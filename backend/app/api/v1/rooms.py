@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends, Query
 from sqlmodel import Session
 from typing import List
 
-from app.database import get_session
+from app_archive.database import get_session
 from app.schemas.room import RoomCreate, RoomResponse
-from app.services.room_service import RoomService
+from app_archive.services.room_service import RoomService
 
 router = APIRouter(prefix="/rooms", tags=["Rooms"])
 
