@@ -1,4 +1,3 @@
-from app.schemas.auth import UserRegister, UserLogin, Token, TokenData
 from app.schemas.room import RoomCreate, RoomResponse
 from app.schemas.message import MessageCreate, MessageResponse
 

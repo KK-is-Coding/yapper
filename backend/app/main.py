@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 
 from app.config import settings
 from app.database import create_db_and_tables
-from app.api.v1 import auth, rooms, messages
+from app.api.v1 import rooms
 from app.websocket.handlers import handle_websocket
 
 
@@ -23,19 +23,16 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# ✅ FIXED CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins(),
+    allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# API Routes
-app.include_router(auth.router, prefix="/api/v1")
+# ONLY ROOMS API (no auth, no messages REST)
 app.include_router(rooms.router, prefix="/api/v1")
-app.include_router(messages.router, prefix="/api/v1")
 
 
 @app.websocket("/ws/{room_id}")
@@ -45,4 +42,4 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
 
 @app.get("/")
 def root():
-    return {"message": "Yapper API is running", "version": "1.0.0"}
+    return {"message": "Yapper API running"}

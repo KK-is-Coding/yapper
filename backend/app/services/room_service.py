@@ -1,20 +1,19 @@
 from sqlmodel import Session, select
-from fastapi import HTTPException, status
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import List
 
 from app.models.room import Room
-from app.models.user import User
 from app.schemas.room import RoomCreate, RoomResponse
 from app.core.geo import is_within_range
 
 
 class RoomService:
+
     @staticmethod
-    def create_room(room_data: RoomCreate, user: User, db: Session) -> RoomResponse:
+    def create_room(room_data: RoomCreate, db: Session) -> RoomResponse:
         new_room = Room(
             name=room_data.name,
-            creator_id=user.id,
+            creator_id="anonymous",
             latitude=room_data.latitude,
             longitude=room_data.longitude
         )
@@ -36,47 +35,35 @@ class RoomService:
 
     @staticmethod
     def get_nearby_rooms(lat: float, lon: float, db: Session) -> List[RoomResponse]:
-        now = datetime.now(timezone.utc)
+        # ✅ SQLite-safe naive UTC
+        now = datetime.utcnow()
 
-        # Get all active rooms
         rooms = db.exec(
             select(Room).where(Room.is_active == True)
         ).all()
 
-        nearby_rooms = []
-        for room in rooms:
-            # Check if expired
-            expires_at = room.expires_at
-            if expires_at.tzinfo is None:
-                expires_at = expires_at.replace(tzinfo=timezone.utc)
+        nearby: List[RoomResponse] = []
 
-            if expires_at <= now:
+        for room in rooms:
+            # ✅ no offset-aware comparison
+            if room.expires_at <= now:
                 room.is_active = False
                 db.add(room)
                 continue
 
-            # Check if within range
             if is_within_range(lat, lon, room.latitude, room.longitude):
-                nearby_rooms.append(RoomResponse(
-                    id=room.id,
-                    name=room.name,
-                    location=f"{room.latitude:.4f}, {room.longitude:.4f}",
-                    latitude=room.latitude,
-                    longitude=room.longitude,
-                    created_at=room.created_at.isoformat(),
-                    expires_at=room.expires_at.isoformat(),
-                    is_active=room.is_active
-                ))
+                nearby.append(
+                    RoomResponse(
+                        id=room.id,
+                        name=room.name,
+                        location=f"{room.latitude:.4f}, {room.longitude:.4f}",
+                        latitude=room.latitude,
+                        longitude=room.longitude,
+                        created_at=room.created_at.isoformat(),
+                        expires_at=room.expires_at.isoformat(),
+                        is_active=room.is_active
+                    )
+                )
 
         db.commit()
-        return nearby_rooms
-
-    @staticmethod
-    def get_room_by_id(room_id: str, db: Session) -> Room:
-        room = db.get(Room, room_id)
-        if not room:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Room not found"
-            )
-        return room
+        return nearby
