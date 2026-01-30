@@ -7,7 +7,7 @@ def calculate_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> fl
     Calculate distance between two points using Haversine formula.
     Returns distance in kilometers.
     """
-    R = 6371  # Earth's radius in kilometers
+    R = 6371
 
     lat1, lon1, lat2, lon2 = map(radians, [lat1, lon1, lat2, lon2])
 

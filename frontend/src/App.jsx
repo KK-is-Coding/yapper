@@ -1,62 +1,173 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import LandingPage from './components/LandingPage';
 import Sidebar from './components/Sidebar';
 import ChatArea from './components/ChatArea';
 import CreateRoomModal from './components/CreateRoomModal';
 
+const API_BASE = 'http://127.0.0.1:8000/api/v1';
+
 const App = () => {
   const [currentView, setCurrentView] = useState('landing');
   const [username, setUsername] = useState('');
-  const [showCreateRoom, setShowCreateRoom] = useState(false);
   const [rooms, setRooms] = useState([]);
   const [selectedRoom, setSelectedRoom] = useState(null);
-  const [messages, setMessages] = useState({});
-  const [userLocation] = useState({ lat: 13.0125, lng: 80.2452 });
+  const [messages, setMessages] = useState([]);
+  const [showCreateRoom, setShowCreateRoom] = useState(false);
+  const [userLocation, setUserLocation] = useState(null);
+
+  const wsRef = useRef(null);
+
+  // stable client id
+  const clientIdRef = useRef(
+    localStorage.getItem("client_id") ||
+      (() => {
+        const id = "client_" + Math.random().toString(36).slice(2);
+        localStorage.setItem("client_id", id);
+        return id;
+      })()
+  );
+  const clientId = clientIdRef.current;
+
+  /* ---------------- LANDING ---------------- */
 
   const handleStartChatting = (name) => {
-    if (name.trim()) {
-      setUsername(name);
-      setCurrentView('app');
-    }
+    if (!name.trim()) return;
+    setUsername(name.trim());
+    setCurrentView('app');
   };
 
-  const handleCreateRoom = (roomName) => {
-    if (roomName.trim()) {
-      const newRoom = {
-        id: Date.now(),
+  /* ---------------- LOCATION ---------------- */
+
+  useEffect(() => {
+    if (currentView !== 'app') return;
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setUserLocation({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+        });
+      },
+      () => alert('Location permission required')
+    );
+  }, [currentView]);
+
+  /* ---------------- ROOMS ---------------- */
+
+  const fetchRooms = async () => {
+    if (!userLocation) return;
+
+    const res = await fetch(
+      `${API_BASE}/rooms/nearby?lat=${userLocation.lat}&lon=${userLocation.lng}`
+    );
+    const data = await res.json();
+    setRooms(Array.isArray(data) ? data : []);
+  };
+
+  useEffect(() => {
+    if (!userLocation) return;
+    fetchRooms();
+  }, [userLocation]);
+
+  const handleCreateRoom = async (roomName) => {
+    if (!userLocation) return;
+
+    const res = await fetch(`${API_BASE}/rooms`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
         name: roomName,
-        location: `${userLocation.lat.toFixed(4)}, ${userLocation.lng.toFixed(4)}`,
-        lat: userLocation.lat,
-        lng: userLocation.lng
-      };
-      setRooms([...rooms, newRoom]);
-      setMessages({ ...messages, [newRoom.id]: [] });
-      setShowCreateRoom(false);
-      setSelectedRoom(newRoom);
-    }
+        latitude: userLocation.lat,
+        longitude: userLocation.lng,
+      }),
+    });
+
+    const room = await res.json();
+    setShowCreateRoom(false);
+    await fetchRooms();
+    joinRoom(room);
   };
 
-  const handleSendMessage = (messageText) => {
-    if (messageText.trim() && selectedRoom) {
-      const message = {
-        id: Date.now(),
-        text: messageText,
-        sender: username,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
-      setMessages({
-        ...messages,
-        [selectedRoom.id]: [...(messages[selectedRoom.id] || []), message]
-      });
+  /* ---------------- WEBSOCKET ---------------- */
+
+  const joinRoom = async (room) => {
+    setSelectedRoom(room);
+    setMessages([]);
+
+    if (wsRef.current) {
+      wsRef.current.close();
     }
+
+    const res = await fetch(`${API_BASE}/rooms/${room.id}/messages/`);
+    const history = await res.json();
+
+    const normalizedHistory = history.map((m) => ({
+      id: m.id,
+      sender: m.username,
+      content: m.content,
+      timestamp: m.created_at,
+    }));
+
+    setMessages(normalizedHistory);
+
+    const ws = new WebSocket(`ws://127.0.0.1:8000/ws/${room.id}`);
+
+    ws.onopen = () => {
+      ws.send(
+        JSON.stringify({
+          type: "join",
+          nickname: username,
+          client_id: clientId,
+        })
+      );
+    };
+
+    ws.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+
+      if (msg.type === "error") {
+        alert(msg.message);
+        return;
+      }
+
+      if (msg.type === "message") {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: msg.id,
+            sender: msg.sender,
+            content: msg.content,
+            timestamp: msg.timestamp,
+          },
+        ]);
+      }
+    };
+
+    ws.onclose = () => {
+      console.log("WebSocket closed");
+    };
+
+    wsRef.current = ws;
+  };
+
+  const handleSendMessage = (text) => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
+
+    wsRef.current.send(
+      JSON.stringify({
+        type: "message",
+        content: text,
+      })
+    );
   };
 
   const handleLogout = () => {
-    setUsername('');
+    wsRef.current?.close();
     setCurrentView('landing');
+    setUsername('');
     setRooms([]);
+    setMessages([]);
     setSelectedRoom(null);
-    setMessages({});
   };
 
   if (currentView === 'landing') {
@@ -68,14 +179,14 @@ const App = () => {
       <Sidebar
         rooms={rooms}
         selectedRoom={selectedRoom}
-        onSelectRoom={setSelectedRoom}
+        onSelectRoom={joinRoom}
         onCreateRoom={() => setShowCreateRoom(true)}
-        onRefresh={() => setRooms([...rooms])}
+        onRefresh={fetchRooms}
       />
-      
+
       <ChatArea
         selectedRoom={selectedRoom}
-        messages={messages[selectedRoom?.id] || []}
+        messages={messages}
         username={username}
         onSendMessage={handleSendMessage}
         onLogout={handleLogout}

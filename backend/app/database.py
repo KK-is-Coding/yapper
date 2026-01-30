@@ -1,6 +1,7 @@
 from sqlmodel import SQLModel, create_engine, Session
 from app.config import settings
 
+
 engine = create_engine(
     settings.DATABASE_URL,
     connect_args={
@@ -10,6 +11,10 @@ engine = create_engine(
 
 
 def create_db_and_tables():
+    SQLModel.metadata.create_all(engine)
+
+
+def init_db():
     SQLModel.metadata.create_all(engine)
 
 

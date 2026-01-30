@@ -23,7 +23,7 @@ const LandingPage = ({ onStartChatting }) => {
     return (
         <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center p-8">
             <div className="w-full max-w-6xl flex items-center justify-between gap-16">
-                {/* Left side - Content */}
+        
                 <div className="flex-1 space-y-8">
                     <div>
                         <h1 className="text-7xl font-serif mb-4">
@@ -52,13 +52,10 @@ const LandingPage = ({ onStartChatting }) => {
                     </div>
                 </div>
 
-                {/* Right side - Animated panel */}
                 <div className="flex-1 relative">
                     <div className="aspect-[4/5] bg-gradient-to-br from-orange-500 via-orange-600 to-orange-700 rounded-3xl overflow-hidden relative">
-                        {/* Gradient overlay */}
                         <div className="absolute inset-0 bg-gradient-to-br from-orange-400/30 via-transparent to-red-600/30"></div>
 
-                        {/* Animated particles */}
                         {particles.map(particle => (
                             <div
                                 key={particle.id}

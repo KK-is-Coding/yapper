@@ -1,7 +1,6 @@
 from typing import Generator
 from sqlmodel import Session
-
-from app_archive.database import get_session
+from app.database import get_session
 
 
 def get_db() -> Generator[Session, None, None]:
