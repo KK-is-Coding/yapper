@@ -29,7 +29,7 @@ const ChatArea = ({ selectedRoom, messages, username, onSendMessage, onLogout })
         return (
             <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
                 <MessageCircle size={64} className="text-zinc-700 mb-4" />
-                <h2 className="text-2xl font-semibold mb-2">Welcome to Chugli</h2>
+                <h2 className="text-2xl font-semibold mb-2">Welcome to Yapper</h2>
                 <p className="text-zinc-400">Select a room from the list to start chatting</p>
             </div>
         );
