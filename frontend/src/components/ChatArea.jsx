@@ -7,7 +7,7 @@ const ChatArea = ({ selectedRoom, messages, username, onSendMessage, onLogout })
 
     const normalizedMessages = messages.map((msg) => ({
         id: msg.id,
-        sender: msg.sender || msg.username, // 👈 FIX
+        sender: msg.sender || msg.username,
         content: msg.content,
         timestamp: msg.timestamp || new Date(msg.created_at).toLocaleTimeString([], {
             hour: '2-digit',

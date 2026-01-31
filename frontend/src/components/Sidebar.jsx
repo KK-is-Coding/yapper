@@ -18,9 +18,11 @@ const Sidebar = ({ rooms, selectedRoom, onSelectRoom, onCreateRoom, onRefresh })
             <div className="p-4">
                 <button
                     onClick={onCreateRoom}
-                    className="w-full px-4 py-3 bg-orange-600 rounded-lg"
+                    className="w-full px-4 py-3 bg-orange-600 rounded-lg
+               flex items-center justify-center gap-2"
                 >
-                    <Plus size={20} /> Create Room
+                    <Plus size={20} />
+                    <span>Create Room</span>
                 </button>
             </div>
 
